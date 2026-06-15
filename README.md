@@ -66,6 +66,24 @@ print(results)
 - Select class with highest probability
 - Return predicted color and confidence score
 
+## Output
+
+Example output:
+
+```json
+{
+  "image": "image1.jpg",
+  "color": "blue",
+  "confidence": 1.0
+}
+```
+
+Returns:
+
+- `image` – input image filename
+- `color` – predicted plate color
+- `confidence` – prediction confidence score
+
 ## Test Client
 
 ```bash
