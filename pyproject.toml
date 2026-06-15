@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plate_color_classifier"
+version = "0.0.1"
+description = "Number plate color classification using Improved Tiny CNN"
+readme = "README.md"
+requires-python = ">=3.8"
+
+authors = [
+    { name = "Mannan Agarwal" }
+]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+include = ["modules*"]
