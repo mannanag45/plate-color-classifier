@@ -1,6 +1,6 @@
 # Plate Color Classifier
 
-Lightweight number plate color classifier using an Improved Tiny CNN.
+Lightweight number plate color classifier using an Improved Tiny CNN with an HSV-based sanity check during inference.
 
 Supported classes:
 
@@ -42,19 +42,12 @@ weights/improved_tiny_cnn_dynamic_fp16.onnx
 
 ## Example Usage
 
-```python
-from modules import PlateColorInference
+Run hybrid inference on a single image:
 
-model = PlateColorInference(
-    model_path="weights/improved_tiny_cnn_dynamic_fp16.onnx"
-)
-
-results = model.predict_folder(
-    image_folder="test_images",
-    batch_size=1
-)
-
-print(results)
+```bash
+python hybrid_inference.py \
+  --model weights/improved_tiny_cnn_dynamic_fp16.onnx \
+  --image "/path/to/image.jpg"
 ```
 
 ---
@@ -70,31 +63,72 @@ print(results)
 
 ---
 
+## HSV Sanity Check
+
+During inference, HSV color analysis is also performed.
+
+Hybrid decision logic:
+
+- If CNN and HSV agree → return that color
+- If CNN confidence ≥ 0.98 → return CNN prediction
+- Otherwise → return `unknown`
+
+This safety mechanism helps reduce false color classifications on difficult images.
+
+---
+
 ## Postprocessing
 
 - Apply softmax
 - Select class with highest probability
-- Return predicted color and confidence score
+- Compute confidence score
+- Run HSV sanity check
+- Produce final hybrid decision
 
 ---
 
 ## Output
 
-Example output:
+### Example: Normal Prediction
 
 ```json
 {
   "image": "image1.jpg",
   "color": "blue",
-  "confidence": 1.0
+  "cnn_color": "blue",
+  "cnn_confidence": 0.9996,
+  "hsv_color": "blue",
+  "message": "CNN and HSV agree"
 }
 ```
 
-Returns:
+### Example: Rejected as Unknown
+
+```json
+{
+  "image": "image2.jpg",
+  "color": "unknown",
+  "cnn_color": "yellow",
+  "cnn_confidence": 0.6699,
+  "hsv_color": "white",
+  "message": "CNN/HSV disagreement: CNN=yellow, HSV=white"
+}
+```
+
+### Why "unknown" is returned
+
+If the CNN and HSV predictions disagree and the CNN confidence is below the trust threshold (0.98), the system returns `unknown` instead of forcing a potentially incorrect plate color prediction.
+
+---
+
+## Returned Fields
 
 - `image` – input image filename
-- `color` – predicted plate color
-- `confidence` – prediction confidence score
+- `color` – final predicted plate color
+- `cnn_color` – CNN prediction
+- `cnn_confidence` – CNN confidence score
+- `hsv_color` – HSV sanity-check prediction
+- `message` – explanation of the hybrid decision
 
 ---
 
@@ -109,13 +143,49 @@ python test_client_tensor.py
 ## Performance
 
 ```text
-Internal Test Accuracy: 99.96%
-External Dataset Accuracy: 98.95%
+External Dataset (numberplate_colour)
 
-Black Recall: 0.97
-Green Recall: 1.00
+Pure CNN:
+Accuracy: 99.87%
+Wrong Predictions: 27
+
+Hybrid CNN + HSV:
+Coverage: 98.85%
+Unknown / Rejected: 231
+Wrong Predictions: 11
+Accuracy on Classified Images: 99.94%
+
+All India Dataset:
+Accuracy: 99.99%
+```
+
+---
+
+## Model Information
+
+Architecture:
+
+```text
+Improved Tiny CNN
+RGB Input
+5 Output Classes
+```
+
+Training Model:
+
+```text
+improved_tiny_cnn_best.pth
+```
+
+Deployment Model:
+
+```text
+improved_tiny_cnn_dynamic_fp16.onnx
+```
 
 Model Size:
+
+```text
 FP32 ONNX: 772 KB
 FP16 ONNX: 398 KB
 ```
@@ -124,16 +194,11 @@ FP16 ONNX: 398 KB
 
 ## Deployment
 
-Training format:
+The exported ONNX model supports:
 
-```text
-improved_tiny_cnn_best.pth
-```
+- Dynamic batch sizes
+- ONNX Runtime
+- TensorRT conversion
+- CPU and GPU deployment
 
-Deployment format:
-
-```text
-improved_tiny_cnn_dynamic_fp16.onnx
-```
-
-The exported ONNX model supports dynamic batch sizes and can be converted to TensorRT in the deployment environment.
+The deployed inference pipeline combines CNN predictions with an HSV-based sanity check to reduce false classifications on difficult images.
