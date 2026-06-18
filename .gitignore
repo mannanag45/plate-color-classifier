@@ -2,13 +2,29 @@
 __pycache__/
 *.egg-info/
 
+models/
 labels/
 real_blue_test/
 
-*.png
-*.jpg
-*.jpeg
-*.webp
-*.json
 *.pth
 *.onnx
+*.data
+*.mlpackage
+*.zip
+
+augment_*.py
+benchmark_*.py
+build_*.py
+convert_*.py
+dataset_*.py
+evaluate_*.py
+export_*.py
+generate_*.py
+save_*.py
+train_*.py
+top3_inference.py
+sample_view.py
+manual_label_images.py
+auto_label_images.py
+hsv_inference.py
+inference.py
